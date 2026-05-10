@@ -9,7 +9,6 @@ const mockSetWaypointFromCoords = vi.fn().mockResolvedValue([]);
 const mockAddEmptyWaypointToEnd = vi.fn();
 const mockClearWaypoints = vi.fn();
 const mockClearRoutes = vi.fn();
-const mockUpdateDateTime = vi.fn();
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: vi.fn(() => mockNavigate),
@@ -32,32 +31,35 @@ const mockResults = {
   show: { '0': true },
 };
 
-const mockDateTime = { type: 0, value: '2024-01-01T12:00' };
-
-vi.mock('@/stores/directions-store', () => ({
-  defaultWaypoints: [
-    { id: '0', geocodeResults: [], userInput: '' },
-    { id: '1', geocodeResults: [], userInput: '' },
-  ],
-  useDirectionsStore: vi.fn((selector) =>
-    selector({
-      waypoints: mockWaypoints,
-      results: mockResults,
-      addEmptyWaypointToEnd: mockAddEmptyWaypointToEnd,
-      clearWaypoints: mockClearWaypoints,
-      clearRoutes: mockClearRoutes,
-    })
-  ),
-}));
-
-vi.mock('@/stores/common-store', () => ({
-  useCommonStore: vi.fn((selector) =>
-    selector({
-      updateDateTime: mockUpdateDateTime,
-      dateTime: mockDateTime,
-    })
-  ),
-}));
+vi.mock('@/stores/directions-store', () => {
+  const useDirectionsStore = Object.assign(
+    vi.fn((selector) =>
+      selector({
+        waypoints: mockWaypoints,
+        results: mockResults,
+        addEmptyWaypointToEnd: mockAddEmptyWaypointToEnd,
+        clearWaypoints: mockClearWaypoints,
+        clearRoutes: mockClearRoutes,
+      })
+    ),
+    {
+      getState: () => ({
+        waypoints: mockWaypoints,
+        results: mockResults,
+        addEmptyWaypointToEnd: mockAddEmptyWaypointToEnd,
+        clearWaypoints: mockClearWaypoints,
+        clearRoutes: mockClearRoutes,
+      }),
+    }
+  );
+  return {
+    defaultWaypoints: [
+      { id: '0', geocodeResults: [], userInput: '' },
+      { id: '1', geocodeResults: [], userInput: '' },
+    ],
+    useDirectionsStore,
+  };
+});
 
 vi.mock('@/hooks/use-directions-queries', () => ({
   useDirectionsQuery: vi.fn(() => ({
@@ -85,28 +87,9 @@ vi.mock('@/components/settings-footer', () => ({
   ),
 }));
 
-vi.mock('@/components/date-time-picker', () => ({
-  DateTimePicker: ({
-    onChange,
-  }: {
-    type: number;
-    value: string;
-    onChange: (field: string, value: string) => void;
-  }) => (
-    <div data-testid="mock-date-time-picker">
-      <button
-        data-testid="change-date-type"
-        onClick={() => onChange('type', '1')}
-      >
-        Change Type
-      </button>
-      <button
-        data-testid="change-date-value"
-        onClick={() => onChange('value', '2024-01-02T10:00')}
-      >
-        Change Value
-      </button>
-    </div>
+vi.mock('@/components/quick-settings', () => ({
+  QuickSettings: () => (
+    <div data-testid="mock-quick-settings">Quick Settings</div>
   ),
 }));
 
@@ -143,9 +126,9 @@ describe('DirectionsControl', () => {
     expect(screen.getByTestId('mock-settings-footer')).toBeInTheDocument();
   });
 
-  it('should render DateTimePicker component', () => {
+  it('should render QuickSettings component', () => {
     render(<DirectionsControl />);
-    expect(screen.getByTestId('mock-date-time-picker')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-quick-settings')).toBeInTheDocument();
   });
 
   it('should render Add Waypoint button', () => {
@@ -232,29 +215,6 @@ describe('DirectionsControl', () => {
     expect(screen.getByTestId('mock-route-card-0')).toBeInTheDocument();
     expect(screen.getByTestId('mock-route-card-1')).toBeInTheDocument();
     expect(screen.getByTestId('mock-route-card-2')).toBeInTheDocument();
-  });
-
-  it('should call updateDateTime and refetchDirections when date type changes', async () => {
-    const user = userEvent.setup();
-    render(<DirectionsControl />);
-
-    await user.click(screen.getByTestId('change-date-type'));
-
-    expect(mockUpdateDateTime).toHaveBeenCalledWith('type', '1');
-    expect(mockRefetchDirections).toHaveBeenCalled();
-  });
-
-  it('should call updateDateTime and refetchDirections when date value changes', async () => {
-    const user = userEvent.setup();
-    render(<DirectionsControl />);
-
-    await user.click(screen.getByTestId('change-date-value'));
-
-    expect(mockUpdateDateTime).toHaveBeenCalledWith(
-      'value',
-      '2024-01-02T10:00'
-    );
-    expect(mockRefetchDirections).toHaveBeenCalled();
   });
 
   it('should sync waypoints to URL', () => {

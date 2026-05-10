@@ -1,4 +1,5 @@
 import type { BicycleType, PedestrianType } from '@/components/types';
+import type { Profile } from '@/stores/common-store';
 
 interface NumericSetting {
   name: string;
@@ -858,6 +859,26 @@ export type DirectionsLanguage = (typeof languageOptions)[number]['value'];
 export const DEFAULT_DIRECTIONS_LANGUAGE: DirectionsLanguage = 'en-US';
 export const DIRECTIONS_LANGUAGE_STORAGE_KEY = 'directions_language';
 
+// Settings surfaced in the QuickSettings (left sidebar) panel rather than the
+// advanced (right) panel. Keep this list in sync with what QuickSettings renders
+// — settings-panel.tsx reads it to skip these in the advanced view.
+export const QUICK_SETTING_PARAMS = [
+  'use_highways',
+  'use_tolls',
+  'use_ferry',
+  'alternates',
+] as const;
+
+// Profiles where use_highways / use_tolls are meaningful costing options.
+// Pedestrian, bicycle, motor_scooter ignore them, so the QuickSettings panel
+// only renders those two controls when the active profile is in this list.
+export const HIGHWAY_TOLL_PROFILES = [
+  'car',
+  'truck',
+  'bus',
+  'motorcycle',
+] as const satisfies readonly Profile[];
+
 export const settingsInit = {
   maneuver_penalty: 5,
   country_crossing_penalty: 0,
@@ -868,9 +889,9 @@ export const settingsInit = {
   weight: 21.77,
   axle_load: 9,
   hazmat: false,
-  use_highways: 1,
-  use_tolls: 1,
-  use_ferry: 1,
+  use_highways: 0.5,
+  use_tolls: 0.5,
+  use_ferry: 0,
   ferry_cost: 300,
   use_living_streets: 0.5,
   use_tracks: 0,
@@ -919,7 +940,7 @@ export const settingsInit = {
   use_trails: 0,
   denoise: 0.1,
   generalize: 0,
-  alternates: 0,
+  alternates: 2,
   speed_types: ['current', 'freeflow', 'predicted', 'constrained'],
 };
 

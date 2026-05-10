@@ -37,6 +37,8 @@ Husky `pre-commit` runs `npm run typecheck && npx lint-staged` (eslint --fix on 
 - **Zustand** + `immer` + `devtools` middleware for client state (3 stores in `src/stores/`)
 - **Tailwind CSS v4** via `@tailwindcss/vite` + **shadcn/ui** (style `new-york`, base `slate`, lucide icons; see `components.json`)
 - **maplibre-gl** + **react-map-gl** + `@watergis/maplibre-gl-terradraw` for drawing exclude-polygons
+- **react-day-picker** (used by the shadcn `Calendar` primitive that powers the date/time button)
+- **date-fns** for formatting
 - **zod** for env/search-param/URL validation
 - Path alias: `@/*` → `src/*`
 
@@ -73,8 +75,9 @@ Server-state lives in TanStack Query. The global `QueryClient` (`src/lib/tanstac
 
 - `src/components/map/` — MapLibre map. `index.tsx` is the orchestrator; `parts/` holds map sublayers (route lines, isochrone polygons, hover popups, draw controls, marker icons). `valhalla-layers.ts` defines internal Valhalla edge/node/shortcut/access-restriction MVT layer IDs.
 - `src/components/directions/`, `src/components/isochrones/`, `src/components/tiles/` — the three tab panels.
-- `src/components/settings-panel/` — profile-specific costing options. `settings-options.ts` holds `settingsInit` (default) and `settingsInitTruckOverride`.
-- `src/components/ui/` — shadcn/ui primitives (do not rename — they're tracked by `components.json`).
+- `src/components/quick-settings.tsx` — left-sidebar "General settings" collapsible panel. Hosts the most-used controls inline so they're visible without opening the advanced panel: ferry/highway/toll icon buttons (a state-decorated `IconEnumButton` for each), a `DateTimeButton`, an alternates slider, and the directions language picker. Used by both the directions and isochrones tabs (the latter passes `showAlternates={false} showLanguage={false}`). Renders the `SettingsButton` ("Advanced settings") at the bottom — that's the entry point to `SettingsPanel`.
+- `src/components/settings-panel/` — full ("advanced") costing options panel. `settings-options.ts` holds `settingsInit`, `settingsInitTruckOverride`, the per-profile `profileSettings` / `generalSettings` lists, and the `languageOptions` / language storage helpers. `settings-panel.tsx` renders `Profile Settings` + `General Settings`, **filtering out** `use_highways`, `use_tolls`, `use_ferry`, `alternates` since those moved to QuickSettings (params still flow through `filter-profile-settings.ts` for API requests).
+- `src/components/ui/` — shadcn/ui primitives (do not rename — they're tracked by `components.json`). `icon-enum-setting.tsx` (`IconEnumButton`), `date-time-button.tsx`, and `calendar.tsx` are the QuickSettings building blocks.
 - `src/components/types.ts` — shared `PossibleSettings`, `ActiveWaypoint`, Valhalla response types.
 
 ### Backend integration
@@ -115,6 +118,7 @@ All build-time, prefixed `VITE_`. Defined in `.env`, typed in `src/vite-env.d.ts
 - **Value code elegance.** Prefer clear, concise solutions over clever ones; small, well-named units over sprawling abstractions.
 - **Variable names shouldn't be too generic.** Avoid `data`, `result`, `item`, `tmp` — pick names that say what the value actually is (`routeResponse`, `selectedWaypoint`, `decodedShape`).
 - **Test new features the way a user would.** After adding or changing a feature, exercise the 90th-percentile happy path in the running app (dev server + browser) — not exhaustively, but enough to confirm the feature actually works end-to-end. Typecheck and unit tests prove the code compiles, not that the feature behaves. If you can't run it (no browser available, etc.), say so explicitly instead of claiming success.
+- **Don't run the test suite unprompted.** Only run `vitest`, `playwright`, or `npm run check` when the user asks for it (or when it's the natural finish of a task that explicitly involves tests). After non-trivial changes, you're encouraged to _remind_ the user that tests are worth running — but leave the actual running to them. Typecheck (`tsc --noEmit`) is fine to run on your own as a sanity check.
 - **Keep this file (and other docs) current.** After non-trivial changes — new architectural pieces, store/route restructures, build/deploy changes, env-var additions — update `CLAUDE.md` and any other affected docs as part of the same change.
 - **Draft the commit message, but ask before committing.** Produce a descriptive but terse message yourself (concise over chatty, but the "why" should still be readable) — don't ask the user what to write. Do still ask before actually running `git commit`; as maintainers we prefer to approve the commit boundary ourselves. Commit messages are the one place we want AI-written prose in normal English; everything else AI writes (issue/PR bodies) goes in pirate english.
 - **Issue and PR descriptions: write in pirate english.** When asked to draft an issue or PR description, do not ask for confirmation — output it directly in pirate english (see https://www.polytranslator.com/pirate-english/ for the target style). This applies only to issue/PR body text; commit messages and code stay in normal English.

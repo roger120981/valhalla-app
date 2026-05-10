@@ -35,14 +35,23 @@ const mockGeocodeResults: {
   sourcelnglat: [number, number];
 }[] = [];
 
-vi.mock('@/stores/isochrones-store', () => ({
-  useIsochronesStore: vi.fn((selector) =>
-    selector({
-      results: mockResults,
-      geocodeResults: mockGeocodeResults,
-    })
-  ),
-}));
+vi.mock('@/stores/isochrones-store', () => {
+  const useIsochronesStore = Object.assign(
+    vi.fn((selector) =>
+      selector({
+        results: mockResults,
+        geocodeResults: mockGeocodeResults,
+      })
+    ),
+    {
+      getState: () => ({
+        results: mockResults,
+        geocodeResults: mockGeocodeResults,
+      }),
+    }
+  );
+  return { useIsochronesStore };
+});
 
 vi.mock('@/hooks/use-isochrones-queries', () => ({
   useIsochronesQuery: vi.fn(() => ({
@@ -74,6 +83,12 @@ vi.mock('./isochrone-card', () => ({
     <div data-testid="mock-isochrone-card" data-show-on-map={showOnMap}>
       Isochrone Card: {JSON.stringify(data)}
     </div>
+  ),
+}));
+
+vi.mock('@/components/quick-settings', () => ({
+  QuickSettings: () => (
+    <div data-testid="mock-quick-settings">Quick Settings</div>
   ),
 }));
 
@@ -172,18 +187,9 @@ describe('IsochronesControl', () => {
     expect(result.wps).toBeUndefined();
   });
 
-  it('should render container with proper structure', () => {
+  it('should render QuickSettings component', () => {
     render(<IsochronesControl />);
-
-    const container = screen.getByTestId('mock-waypoints').parentElement;
-    expect(container).toHaveClass(
-      'flex',
-      'flex-col',
-      'gap-3',
-      'border',
-      'rounded-md',
-      'p-2'
-    );
+    expect(screen.getByTestId('mock-quick-settings')).toBeInTheDocument();
   });
 });
 
